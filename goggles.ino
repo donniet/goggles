@@ -6,13 +6,13 @@
  #include <avr/power.h>
 #endif
 
-#define PIN 0
+#define PIXEL_PIN 0
 
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, PIN);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, PIXEL_PIN);
 
 //uint32_t first_color = 0xffc0b;
 uint32_t first_color = 0x0369cf;
-uint32_t color  = first_color;
+volatile uint32_t color  = first_color;
 uint32_t frame = 0;
 uint32_t delay_time = 50;
 
@@ -22,6 +22,14 @@ void setup() {
 #endif
   pixels.begin();
   pixels.setBrightness(32);
+
+  pinMode(2, INPUT);
+  attachInterrupt(0, changeColor, FALLING);
+}
+
+void changeColor() {
+  color = (color >> 4) | ((color & 0x00000F) << 20);
+  if(!color) color = first_color;
 }
 
 uint32_t darken(uint32_t color, uint8_t shift) {
@@ -56,8 +64,7 @@ void loop() {
   frame++;
 
   if(frame % 128 == 0) {      // Every 8 times around
-    color = (color >> 4) | ((color & 0x00000F) << 20);
-    if(!color) color = first_color;
+    changeColor();
   }
   delay(delay_time);
 }
